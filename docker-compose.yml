@@ -1,0 +1,58 @@
+name: tradingbot
+
+services:
+  run_loop:
+    image: tradingbot:local
+    build: .
+    container_name: tradingbot-run-loop
+    command: python -u -m src.run_loop
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./data:/app/data
+    # WITH_MACRO hier fest erzwungen statt aus .env zu lesen: Schicht B soll
+    # IMMER laufen, egal was in .env steht (der Wert dort war bisher "false"
+    # und liess sich nur per Shell-Override umgehen -- das galt nie fuer
+    # Docker). docker-compose.yml enthaelt keine Geheimnisse, darf also fest
+    # committet werden.
+    environment:
+      - WITH_MACRO=true
+      # 15m zusaetzlich zu 1h -- zwei unabhaengige Signal-Kanaele, wie gewuenscht
+      # (nicht als Ersatz fuer 1h, siehe Konversation vom 2026-09-03).
+      - TIMEFRAMES=1h,15m
+    # unless-stopped: startet nach Absturz/Docker-Neustart automatisch neu,
+    # respektiert aber ein manuelles Stopp in Docker Desktop -- genau die
+    # Kontrolle, die gewuenscht war (nicht "immer", sondern "bis ich stoppe").
+    restart: unless-stopped
+
+  telegram_listener:
+    image: tradingbot:local
+    build: .
+    container_name: tradingbot-telegram-listener
+    command: python -u -m src.telegram_listener
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./data:/app/data
+    environment:
+      # PLAN Stufe C10: Adresse des NEUEN freqtrade-Systems (eigener Docker-
+      # Compose-Stack, siehe freqtrade/docker-compose.yml) fuer /ft_status
+      # /ft_pause /ft_resume /ft_forceexit /ft_panic. Kein Geheimnis (nur eine
+      # interne Container-Adresse), darf also fest committet werden --
+      # FREQTRADE_API_USER/_PASS (die echten Zugangsdaten) kommen weiterhin
+      # nur aus der .env, nie von hier.
+      - FREQTRADE_API_URL=http://tradingbot-freqtrade-dryrun:8080
+    networks:
+      - default
+      - tradingbot-shared
+    restart: unless-stopped
+    depends_on:
+      - run_loop
+
+# Gemeinsames Netzwerk mit freqtrade/docker-compose.yml -- zwei getrennte
+# `docker compose`-Projekte bekommen sonst je ihr eigenes, isoliertes Netzwerk
+# und koennen sich nicht per Containername erreichen. Einmalig anlegen:
+# `docker network create tradingbot-shared` (siehe DOCKER.md). `default` bleibt
+# zusaetzlich bestehen, damit telegram_listener weiterhin run_loop (selbes
+# Compose-Projekt, z.B. fuer db.py/data/) normal erreicht.
+networks:
+  tradingbot-shared:
+    external: true

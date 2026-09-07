@@ -1,0 +1,10 @@
+{
+  "_comment": "Wiederverwendbares Dev-Werkzeug, kein Teil der Produktivconfig: Kraken laesst sich nicht per `freqtrade download-data` historisch laden (siehe PLAN), Binance-Testdaten aus Stufe B liegen aber bereits unter ~/ft-crosscheck/user_data/data/binance/BTC_USDT-1h.json. Vor Gebrauch dorthin kopieren nach user_data/data/binance/, dann: freqtrade backtesting -c user_data/config.json -c config-backtest-with-binance-data.json --strategy SignalCoreStrategy --timerange <von>-<bis>. Aendert die Produktivconfig (config.json) nicht, ueberlagert nur fuer diesen einen Lauf.",
+  "stake_currency": "USDT",
+  "exchange": {
+    "name": "binance",
+    "pair_whitelist": ["BTC/USDT"]
+  },
+  "dataformat_ohlcv": "json",
+  "db_url": "sqlite:///user_data/tradesv3.backtest-test.sqlite"
+}

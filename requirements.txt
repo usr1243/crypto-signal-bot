@@ -1,0 +1,24 @@
+# Kern (Stufe 0/1/2) -- schlank, keine schweren Abhaengigkeiten
+ccxt>=4.5
+pandas>=2.2
+numpy>=1.26
+requests>=2.32
+python-dotenv>=1.0
+
+# Schicht B / Makro (Stufe 3)
+yfinance>=1.7
+feedparser>=6.0
+anthropic>=1.3          # nur fuer LLM_BACKEND=api (Weg 2) noetig
+
+# Sentiment (Stufe 3) -- optional, siehe README "FinBERT vs. Lexicon".
+# ~350-500MB Download (Modell + torch). Ohne diese zwei Zeilen faellt
+# sentiment.py automatisch auf das abhaengigkeitsfreie Lexicon-Backend
+# zurueck -- kein Absturz, nur schwaechere Sentiment-Qualitaet.
+transformers>=5.0
+torch>=2.0
+
+# Dauerbetrieb (Stufe 4)
+APScheduler>=3.10
+
+# Tests
+pytest>=8.0

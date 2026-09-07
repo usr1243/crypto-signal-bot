@@ -1,0 +1,56 @@
+name: tradingbot-freqtrade
+
+# PLAN wild-booping-firefly.md Stufe C. EIGENER Stack, getrennt von
+# ../docker-compose.yml (run_loop/telegram_listener) -- das bestehende System
+# bleibt die Produktivquelle fuer Telegram-Alerts, bis dieses hier sich
+# bewaehrt hat. Kein Cutover ohne expliziten Beschluss (siehe Plan, Gate).
+#
+# Nutzt das offizielle freqtrade-Image (dieselbe Version, gegen die Stufe B
+# validiert wurde) statt eines eigenen Dockerfiles -- freqtrades eigene
+# Betriebshaerte (siehe Analyse in der Konversation) ist genau der Grund fuer
+# den Umstieg, ein selbstgebautes Image wuerde das unterlaufen.
+services:
+  freqtrade:
+    image: freqtradeorg/freqtrade:2026.8
+    container_name: tradingbot-freqtrade-dryrun
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      # Zeigt der Strategie, wo sie bot/src findet (siehe SignalCoreStrategy.py) --
+      # das Volume unten mountet bot/ nach /bot_src.
+      - SIGNALCORE_BOT_SRC=/bot_src
+      # freqtrades Env-Override-Konvention (FREQTRADE__<SEKTION>__<SCHLUESSEL>,
+      # doppelter Unterstrich) -- Secrets kommen aus der bestehenden .env,
+      # werden nie in dieses Repo geschrieben. Telegram bewusst NICHT hier
+      # ueberschrieben (config.json: enabled=false) -- siehe telegram_comment
+      # dort, sonst 409-Conflict mit dem laufenden telegram_listener.py.
+      - FREQTRADE__EXCHANGE__KEY=${EXCHANGE_API_KEY:-}
+      - FREQTRADE__EXCHANGE__SECRET=${EXCHANGE_API_SECRET:-}
+      # PLAN Stufe C10: echte Werte fuer die REST-API ueberschreiben die
+      # Platzhalter aus config.json -- MUESSEN vor dem ersten echten Start in
+      # der .env stehen (FREQTRADE_API_JWT_SECRET min. 32 Zeichen, z.B. via
+      # `openssl rand -hex 32`; FREQTRADE_API_USER/_PASS frei waehlbar).
+      # telegram_listener.py (../docker-compose.yml) liest DIESELBEN drei
+      # Variablen (als FREQTRADE_API_USER/_PASS, siehe freqtrade_client.py) --
+      # ein Wert an einer Stelle in der .env reicht fuer beide Seiten.
+      - FREQTRADE__API_SERVER__JWT_SECRET_KEY=${FREQTRADE_API_JWT_SECRET:-}
+      - FREQTRADE__API_SERVER__USERNAME=${FREQTRADE_API_USER:-}
+      - FREQTRADE__API_SERVER__PASSWORD=${FREQTRADE_API_PASS:-}
+    volumes:
+      - ./user_data:/freqtrade/user_data
+      - ../:/bot_src:ro
+    networks:
+      - tradingbot-shared
+    command: >
+      trade
+      --config /freqtrade/user_data/config.json
+      --strategy SignalCoreStrategy
+
+# Gemeinsames Netzwerk mit ../docker-compose.yml (run_loop/telegram_listener) --
+# zwei getrennte `docker compose`-Projekte bekommen sonst je ihr eigenes,
+# isoliertes Netzwerk und koennen sich nicht per Servicename erreichen.
+# Einmalig anlegen: `docker network create tradingbot-shared` (siehe DOCKER.md).
+networks:
+  tradingbot-shared:
+    external: true

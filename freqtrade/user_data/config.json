@@ -1,0 +1,86 @@
+{
+  "$schema_comment": "PLAN wild-booping-firefly.md Stufe C. dry_run MUSS true bleiben, bis das Gate (siehe Plan) erfuellt ist -- niemals ohne expliziten menschlichen Beschluss auf false stellen.",
+  "max_open_trades": 3,
+  "stake_currency": "USD",
+  "stake_amount": "unlimited",
+  "tradable_balance_ratio": 0.99,
+  "available_capital": 1000,
+  "dry_run": true,
+  "dry_run_wallet": 1000,
+  "db_url_comment": "Explizit statt Default (tradesv3.dryrun.sqlite im Arbeitsverzeichnis) -- report_freqtrade.py (PLAN Stufe C9) muss die Datei zuverlaessig finden, auch wenn freqtrade aus einem anderen cwd gestartet wird.",
+  "db_url": "sqlite:///user_data/tradesv3.dryrun.sqlite",
+  "cancel_open_orders_on_exit": false,
+  "timeframe": "1h",
+  "trading_mode": "spot",
+  "unfilledtimeout": {
+    "entry": 10,
+    "exit": 10,
+    "exit_timeout_count": 0,
+    "unit": "minutes"
+  },
+  "entry_pricing": {
+    "price_side": "other",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "check_depth_of_market": {
+      "enabled": false
+    }
+  },
+  "exit_pricing": {
+    "price_side": "other",
+    "use_order_book": true,
+    "order_book_top": 1
+  },
+  "order_types": {
+    "entry": "market",
+    "exit": "market",
+    "emergency_exit": "market",
+    "force_exit": "market",
+    "force_entry": "market",
+    "stoploss": "market",
+    "stoploss_on_exchange": true,
+    "stoploss_on_exchange_interval": 60,
+    "stoploss_on_exchange_limit_ratio": 0.99
+  },
+  "exchange": {
+    "name": "kraken",
+    "key": "",
+    "secret": "",
+    "ccxt_config": {},
+    "ccxt_async_config": {},
+    "pair_whitelist": [
+      "BTC/USD",
+      "ETH/USD"
+    ],
+    "pair_blacklist": []
+  },
+  "pairlists": [
+    {
+      "method": "StaticPairList"
+    }
+  ],
+  "protections_comment": "Deprecated hier in dieser freqtrade-Version -- Protections stehen als Klassenattribut `protections` in SignalCoreStrategy.py (C5 im Plan).",
+  "telegram_comment": "ABSICHTLICH deaktiviert (nicht nur unkonfiguriert): freqtrades eigenes Telegram wuerde mit demselben Bot-Token pollen wie das bestehende telegram_listener.py -- genau der '409 Conflict' aus der Konversation vom 04.09. C10 im Plan sieht vor, dass unser Freigabe-Flow ueber die REST-API mit freqtrade spricht, nicht ueber ein zweites Telegram-Polling auf demselben Token. Erst aendern, wenn C10 wirklich gebaut ist oder ein zweiter Bot-Token existiert.",
+  "telegram": {
+    "enabled": false,
+    "token": "",
+    "chat_id": ""
+  },
+  "api_server_comment": "PLAN Stufe C10: telegram_listener.py (bot/src/freqtrade_client.py) spricht hierueber mit freqtrade fuer /ft_status /ft_pause /ft_resume /ft_forceexit /ft_panic. listen_ip_address 0.0.0.0 ist hier UNBEDENKLICH, weil dieser Port NIE mit `ports:` an den Host durchgereicht wird (siehe docker-compose.yml) -- er ist nur ueber das gemeinsame Docker-Netzwerk erreichbar, nie vom Internet. jwt_secret_key/username/password sind bewusst nur Platzhalter (jwt_secret_key erfuellt gerade so die 32-Zeichen-Mindestlaenge des Schemas) -- MUESSEN vor dem ersten echten Start per FREQTRADE__API_SERVER__* Umgebungsvariablen aus der .env ueberschrieben werden (siehe docker-compose.yml), sonst laeuft die API mit oeffentlich bekannten Zugangsdaten.",
+  "api_server": {
+    "enabled": true,
+    "listen_ip_address": "0.0.0.0",
+    "listen_port": 8080,
+    "verbosity": "error",
+    "enable_openapi": false,
+    "jwt_secret_key": "PLATZHALTER-MUSS-per-FREQTRADE__API_SERVER__JWT_SECRET_KEY-ueberschrieben-werden",
+    "CORS_origins": [],
+    "username": "PLATZHALTER",
+    "password": "PLATZHALTER-MUSS-per-env-ueberschrieben-werden"
+  },
+  "bot_name": "signalcore-prod-dryrun",
+  "initial_state": "running",
+  "internals": {
+    "process_throttle_secs": 5
+  }
+}
